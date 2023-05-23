@@ -20,10 +20,13 @@ def process_site():
 
     time.sleep(2)
 
+    wallets = []
     with open('main.txt', 'r') as wallet_file:
-        wallet = wallet_file.read().strip()
+        wallets = wallet_file.readlines()
 
-    while True:
+    while len(wallets) > 0:
+        wallet = wallets.pop(0).strip()
+
         address_input = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CLASS_NAME, 'currency-input--src'))
         )
@@ -41,36 +44,43 @@ def process_site():
                 EC.presence_of_element_located((By.XPATH, "//button[@id='withdraw-records']"))
             )
             logging.info("Найдена кнопка Withdraw")
-            break
+
+            # Получение данных
+            link_element = driver.find_element(By.XPATH, "//a[@class='copy coin-name font-w--600 color--white ml-1 has-tooltip']")
+            link = link_element.get_attribute('href')
+
+            eths_element = driver.find_element(By.XPATH, "//span[@class='coin-name font-w--600 color--white ml-1']")
+            eths_value = eths_element.text
+
+            count_element = driver.find_elements(By.XPATH, "//span[@class='coin-name font-w--600 color--white ml-1']")[1]
+            count_value = count_element.text
+
+            total_eths_element = driver.find_elements(By.XPATH, "//span[@class='coin-name font-w--600 color--white ml-1']")[2]
+            total_eths_value = total_eths_element.text
+
+            with open('info.txt', 'a') as info_file:
+                info_file.write(f"Кошелек: {wallet}, Ссылка: {link}, ETHS: {eths_value}, Count: {count_value}, Total ETHS: {total_eths_value}\n")
 
         except Exception as e:
             logging.error("Ошибка при поиске кнопки Withdraw")
             logging.error(str(e))
-            time.sleep(1)
 
-    # Получение данных
-    link_element = driver.find_element(By.XPATH, "//a[@class='copy coin-name font-w--600 color--white ml-1 has-tooltip']")
-    link = link_element.get_attribute('href')
+        withdraw_button = driver.find_element(By.XPATH, "//button[@id='withdraw']")
+        withdraw_button.click()
+        logging.info("Нажата кнопка Withdraw")
 
-    eths_element = driver.find_element(By.XPATH, "//span[@class='coin-name font-w--600 color--white ml-1']")
-    eths_value = eths_element.text
+        time.sleep(2) 
+        
+        modal_close_button = driver.find_element(By.XPATH, "//div[@id='airdrop-modal']/div/div/div/button/span")
+        modal_close_button.click()
+        logging.info("Нажата кнопка для закрытия модального окна")
 
-    count_element = driver.find_elements(By.XPATH, "//span[@class='coin-name font-w--600 color--white ml-1']")[1]
-    count_value = count_element.text
+        driver.quit()
+        time.sleep(1)  # Добавляем задержку перед открытием нового веб-драйвера
 
-    total_eths_element = driver.find_elements(By.XPATH, "//span[@class='coin-name font-w--600 color--white ml-1']")[2]
-    total_eths_value = total_eths_element.text
-
-    with open('info.txt', 'a') as info_file:
-        info_file.write(f"Ссылка: {link}, ETHS: {eths_value}, Count: {count_value}, Total ETHS: {total_eths_value}\n")
-
-    withdraw_button = driver.find_element(By.XPATH, "//button[@id='withdraw']")
-    withdraw_button.click()
-    logging.info("Нажата кнопка Withdraw")
-
-    modal_close_button = driver.find_element(By.XPATH, "//div[@id='airdrop-modal']/div/div/div/button/span")
-    modal_close_button.click()
-    logging.info("Нажата кнопка для закрытия модального окна")
+        driver = webdriver.Chrome(service=service, options=options)
+        driver.get("https://ethereumshanghai.com/")
+        time.sleep(2)
 
     driver.quit()
 
